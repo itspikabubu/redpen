@@ -105,13 +105,17 @@ def status() -> None:
 @main.command()
 @click.option("--output", "-o", type=click.Path(path_type=Path), default=None, help="Output file path")
 @click.option("--json", "as_json", is_flag=True, help="Export scores as JSON")
-def export(output: Path | None, as_json: bool) -> None:
+@click.option("--html", "as_html", is_flag=True, help="Export full HTML report")
+def export(output: Path | None, as_json: bool, as_html: bool) -> None:
     """Export final draft + changelog + score trajectory."""
-    from redpen.export import export_final, export_scores_json
+    from redpen.export import export_final, export_html, export_scores_json
 
     root = Path.cwd()
 
-    if as_json:
+    if as_html:
+        out = export_html(root, output)
+        console.print(f"[green]HTML report exported to {out}[/green]")
+    elif as_json:
         out = export_scores_json(root, output)
         console.print(f"[green]Scores exported to {out}[/green]")
     else:
