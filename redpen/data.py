@@ -102,11 +102,16 @@ def new_iteration(root: Path) -> int:
     return n
 
 
+def _safe_filename(name: str) -> str:
+    """Sanitize a persona name for use in filenames."""
+    return name.replace("/", "_").replace(" ", "_").replace("\\", "_")
+
+
 def save_scores(root: Path, iteration: int, persona: str, scores: dict[str, Any]) -> None:
     """Save a single persona's scores for an iteration."""
     d = _iter_dir(root, iteration)
     d.mkdir(parents=True, exist_ok=True)
-    p = d / f"scores_{persona}.json"
+    p = d / f"scores_{_safe_filename(persona)}.json"
     p.write_text(json.dumps(scores, indent=2) + "\n")
 
 
@@ -114,7 +119,7 @@ def save_comments(root: Path, iteration: int, persona: str, comments: list[str],
     """Save reader comments from a persona."""
     d = _iter_dir(root, iteration)
     d.mkdir(parents=True, exist_ok=True)
-    p = d / f"comments_{persona}_{model}.json"
+    p = d / f"comments_{_safe_filename(persona)}_{model}.json"
     p.write_text(json.dumps({"persona": persona, "model": model, "comments": comments}, indent=2) + "\n")
 
 

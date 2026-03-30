@@ -362,19 +362,26 @@ async def evaluate_draft(
     """
     goal = load_goal(config.project_root)
 
-    # Initialize API clients
+    # Initialize API clients — check for keys upfront
+    import os
     client_anthropic: anthropic.AsyncAnthropic | None = None
     client_openai: openai.AsyncOpenAI | None = None
 
-    try:
-        client_anthropic = anthropic.AsyncAnthropic()
-    except Exception:
-        logger.warning("Anthropic client initialization failed; skipping Anthropic evals")
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        try:
+            client_anthropic = anthropic.AsyncAnthropic()
+        except Exception:
+            logger.warning("Anthropic client initialization failed; skipping Anthropic evals")
+    else:
+        logger.info("ANTHROPIC_API_KEY not set; using OpenAI for all evaluations")
 
-    try:
-        client_openai = openai.AsyncOpenAI()
-    except Exception:
-        logger.warning("OpenAI client initialization failed; skipping OpenAI evals")
+    if os.environ.get("OPENAI_API_KEY"):
+        try:
+            client_openai = openai.AsyncOpenAI()
+        except Exception:
+            logger.warning("OpenAI client initialization failed; skipping OpenAI evals")
+    else:
+        logger.info("OPENAI_API_KEY not set; using Anthropic for all evaluations")
 
     if not client_anthropic and not client_openai:
         raise RuntimeError(

@@ -219,23 +219,45 @@ async def generate_edit(
         writer_system, stuck_weakness=stuck_weakness,
     )
 
-    client = anthropic.AsyncAnthropic()
+    import os
 
-    try:
-        response = await asyncio.wait_for(
-            client.messages.create(
-                model=config.models.writer,
-                max_tokens=8192,
-                temperature=config.models.temperature,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}],
-            ),
-            timeout=_TIMEOUT,
-        )
-    except asyncio.TimeoutError:
-        raise RuntimeError("Writer agent timed out after {_TIMEOUT}s")
-
-    raw = response.content[0].text
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        client_a = anthropic.AsyncAnthropic()
+        try:
+            response = await asyncio.wait_for(
+                client_a.messages.create(
+                    model=config.models.writer,
+                    max_tokens=8192,
+                    temperature=config.models.temperature,
+                    system=system_prompt,
+                    messages=[{"role": "user", "content": user_prompt}],
+                ),
+                timeout=_TIMEOUT,
+            )
+        except asyncio.TimeoutError:
+            raise RuntimeError(f"Writer agent timed out after {_TIMEOUT}s")
+        raw = response.content[0].text
+    elif os.environ.get("OPENAI_API_KEY"):
+        import openai
+        client_o = openai.AsyncOpenAI()
+        try:
+            response = await asyncio.wait_for(
+                client_o.chat.completions.create(
+                    model=config.models.secondary,
+                    max_tokens=8192,
+                    temperature=config.models.temperature,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                ),
+                timeout=_TIMEOUT,
+            )
+        except asyncio.TimeoutError:
+            raise RuntimeError(f"Writer agent timed out after {_TIMEOUT}s")
+        raw = response.choices[0].message.content or ""
+    else:
+        raise RuntimeError("No API key available. Set ANTHROPIC_API_KEY or OPENAI_API_KEY.")
     return _parse_writer_output(raw)
 
 
